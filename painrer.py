@@ -1,18 +1,12 @@
-﻿import numpy as np
+﻿﻿с добавлением проверки на текстуру
+
+import numpy as np
 import random
 import math
 import cv2
 
-
-# import pudb
-# pu.db
-
-
-color = cv2.imread("ineshin/4.jpg")
-BlackAndWhite = cv2.imread("ineshin/5bw.jpg")
-
-# cv2.imshow("color image", color)
-# cv2.waitKey(0)
+color = cv2.imread("photos/ineshin/1.jpg")
+BlackAndWhite = cv2.imread("photos/ineshin/22.jpg")
 
 
 def fY(R, G, B):
@@ -20,42 +14,21 @@ def fY(R, G, B):
     return res
 
 
-def fCb(R, G, B):
-    res = 128-0.169*R-0.331*G+0.500*B
-    return res
-
-
-def fCr(R, G, B):
-    res = 128+0.500*R-0.419*G-0.081*B
-    return res
-
-
 height = np.size(color, 0)
 width = np.size(color, 1)
 Ycl = []
-Cb = []
-Cr = []
+RGB = []
 Sgcl = []
-D = []
-N = 25
-step = 15
-ID = 1
-
-#gray = fY(color[:, :, 0], color[:, :, 1], color[:, :, 2])
-#cv2.imwrite("ineshin/4-bw.jpg", gray)
+TTcl = []
 
 
-def middle(randI, randJ):
+def middle(randI, randJ, img):
     Rm = 0
     Gm = 0
     Bm = 0
     for k in range(randI - 2, randI + 3, 1):
         for l in range(randJ - 2, randJ + 3, 1):
-            RGBokr = color[k, l]
-
-
-# IndexError: index 2298 is out of bounds for axis 1 with size 2296
-
+            RGBokr = img[k, l]
             Rm += RGBokr[0]
             Gm += RGBokr[1]
             Bm += RGBokr[2]
@@ -65,12 +38,12 @@ def middle(randI, randJ):
     return Rm, Gm, Bm
 
 
-def calcSg(randI, randJ):
+def calcSg(randI, randJ, img):
     Sum = 0
-    mRGB = middle(randI, randJ)
+    mRGB = middle(randI, randJ, img)
     for k in range(randI - 2, randI + 3, 1):
         for l in range(randJ - 2, randJ + 3, 1):
-            RGBcl = color[k, l]
+            RGBcl = img[k, l]
             Sum += \
                 ((RGBcl[0] - mRGB[0]) ** 2) + \
                 ((RGBcl[1] - mRGB[1]) ** 2) + \
@@ -80,45 +53,77 @@ def calcSg(randI, randJ):
 
 
 def vost(i):
-    r = Ycl[i]+(Cb[i]-128)+(Cr[i]+128)
-    g = Ycl[i] - 0.343*(Cb[i]-128) - 0.711*(Cr[i]+128)
-    b = Ycl[i] + 1.765*(Cr[i]-128)
+    r = RGB[i][0]
+    g = RGB[i][1]
+    b = RGB[i][2]
     return r, g, b
 
 
-print("Phase 1")
+def texture(randI, randJ, img):
+    TT = []
+    y = 0
+    yC = fY(img[randI, randJ][0], img[randI, randJ][1], img[randI, randJ][2])
+    for i in range(randI - 2, randI + 3, 1):
+        for j in range(randJ - 2, randJ + 3, 1):
+            TT = []
+            for k in range(i - 1, i + 2, 1):
+                for l in range(j - 1, j + 2, 1):
+                    if k != i and l != j:
+                        rgb = img[k, l]
+                        y = fY(rgb[0], rgb[1], rgb[2])
+                    if y <= yC:
+                        TT.append(0)
+                    else:
+                        TT.append(1)
+                    mm = TT.count(1)
+                    TT[mm - 1] += 1
+    Tmax = 0
+    Tid = 0
+    for i in range(0, len(TT), 1):
+        if TT[i] > Tmax:
+            Tmax = TT[i]
+            Tid = i
 
-for i in range(0, height - step, height / step):
-    for j in range(0, width - step, width / step):
-        randI = random.randint(i, i + step)
-        randJ = random.randint(j, j + step)
+    return Tid
+
+
+N = 25
+set = 15
+print("Phase 1")
+step1 = int(math.floor(height / set))
+step2 = int(math.floor(width / set))
+hh = set * step1
+ww = set * step2
+for i in range(0, hh-step1, step1):
+    for j in range(0, ww-step2, step2):
+        randI = random.randint(i+3, i + step1-3)
+        randJ = random.randint(j+3, j + step2-3)
         RGBcl = color[randI, randJ]
         Ycl.append(fY(RGBcl[0], RGBcl[1], RGBcl[2]))
-        Cb.append(fCb(RGBcl[0], RGBcl[1], RGBcl[2]))
-        Cr.append(fCr(RGBcl[0], RGBcl[1], RGBcl[2]))
-        Sgcl.append(calcSg(randI, randJ))
-        # List of Standard Deviations in a Square
-
+        RGB.append(RGBcl)
+        Sgcl.append(calcSg(randI, randJ, color))
+        TTcl.append(texture(randI, randJ, color))
 
 print("Phase 2")
 height2 = np.size(BlackAndWhite, 0)
 width2 = np.size(BlackAndWhite, 1)
-
-Dmin = 10000000
-for i in range(0, height2-1, 1):
-    for j in range(0, width2 - 1, 1):
+for i in range(0, height2, 1):
+    for j in range(1, width2-1, 1):
+        Dmin = 10000
+        D = []
+        ID = 0
         RGBbw = BlackAndWhite[i, j]
         Ybw = RGBbw[0]
-        Sgbw = calcSg(i, j)
-        for k in range(0, len(Sgcl), 1):
-            D.append(abs(Ybw-Ycl[k])*0.5 +
-                     abs(math.sqrt(Sgbw) - math.sqrt(Sgcl[k])*0.5))
-        for k in range(0, len(D), 1):
+        Sgbw = calcSg(i, j, BlackAndWhite)
+        TTbw = texture(i, j, BlackAndWhite)
+        for k in range(0, len(Ycl), 1):
+            D.append(abs(Ybw-Ycl[k])*0.5 + abs(math.sqrt(Sgbw) -
+                                               math.sqrt(Sgcl[k])*0.5)+abs(TTbw-TTcl[k])*0.5)
+        for k in range(0, len(Ycl), 1):
             if D[k] < Dmin:
                 Dmin = D[k]
                 ID = k
-        BlackAndWhite[i, j] = vost(k)
+        BlackAndWhite[i, j] = vost(ID)
 
-print("Writing result")
-
-cv2.imwrite("ineshin/5bw.jpg", BlackAndWhite)
+print("Writing end")
+cv2.imwrite("photos/ineshin/22.jpg", BlackAndWhite)
