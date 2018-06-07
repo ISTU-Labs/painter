@@ -1,12 +1,17 @@
-﻿﻿с добавлением проверки на текстуру
+﻿# ﻿с добавлением проверки на текстуру
 
 import numpy as np
 import random
 import math
 import cv2
 
-color = cv2.imread("photos/ineshin/1.jpg")
-BlackAndWhite = cv2.imread("photos/ineshin/22.jpg")
+
+#import pudb
+# pu.db
+
+
+color = cv2.imread("ineshin/5.jpg")
+BlackAndWhite = cv2.imread("ineshin/5bw.jpg")
 
 
 def fY(R, G, B):
@@ -63,6 +68,7 @@ def texture(randI, randJ, img):
     TT = []
     y = 0
     yC = fY(img[randI, randJ][0], img[randI, randJ][1], img[randI, randJ][2])
+    print("Rnjs: ->>> ", randI, randJ)
     for i in range(randI - 2, randI + 3, 1):
         for j in range(randJ - 2, randJ + 3, 1):
             TT = []
@@ -94,8 +100,8 @@ step1 = int(math.floor(height / set))
 step2 = int(math.floor(width / set))
 hh = set * step1
 ww = set * step2
-for i in range(0, hh-step1, step1):
-    for j in range(0, ww-step2, step2):
+for i in range(0, hh-step1-3, step1):
+    for j in range(0, ww-step2-3, step2):
         randI = random.randint(i+3, i + step1-3)
         randJ = random.randint(j+3, j + step2-3)
         RGBcl = color[randI, randJ]
@@ -107,13 +113,13 @@ for i in range(0, hh-step1, step1):
 print("Phase 2")
 height2 = np.size(BlackAndWhite, 0)
 width2 = np.size(BlackAndWhite, 1)
-for i in range(0, height2, 1):
-    for j in range(1, width2-1, 1):
+for i in range(3, height2-3, 1):
+    for j in range(3, width2-3, 1):
         Dmin = 10000
         D = []
         ID = 0
         RGBbw = BlackAndWhite[i, j]
-        Ybw = RGBbw[0]
+        Ybw = fY(RGBbw[0], RGBbw[1], RGBbw[2]) 
         Sgbw = calcSg(i, j, BlackAndWhite)
         TTbw = texture(i, j, BlackAndWhite)
         for k in range(0, len(Ycl), 1):
@@ -126,4 +132,4 @@ for i in range(0, height2, 1):
         BlackAndWhite[i, j] = vost(ID)
 
 print("Writing end")
-cv2.imwrite("photos/ineshin/22.jpg", BlackAndWhite)
+cv2.imwrite("ineshin/5bw1.jpg", BlackAndWhite)
